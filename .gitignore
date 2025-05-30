@@ -1,4 +1,5 @@
-.venv/
+venv/
+.vscode/
 # Backend
 __pycache__/
 *.sqlite3
