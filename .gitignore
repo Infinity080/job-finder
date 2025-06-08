@@ -4,7 +4,5 @@ venv/
 __pycache__/
 *.sqlite3
 .env
-test*
-*.txt
 # Frontend
 node_modules/

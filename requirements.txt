@@ -1,0 +1,8 @@
+djangorestframework
+django-cors-headers
+beautifulsoup4
+selenium
+webdriver-manager
+lxml
+sentence-transformers
+PyMuPDF
