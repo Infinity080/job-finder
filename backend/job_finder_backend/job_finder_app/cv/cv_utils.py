@@ -41,8 +41,6 @@ def get_best_specializations_from_cv(cv_text: str, top_k: int = 2):
 
     return website_scores
 
-
-
 def get_experience_level(cv_text):
     text = cv_text.lower()
     year_matches = re.findall(r'(\d+)\s*\+?\s*(?:years|yrs)', text)
@@ -55,7 +53,7 @@ def get_experience_level(cv_text):
     
     if 'senior' in text:
         return 'senior'
-    elif 'mid' in text or 'middle' in text:
+    elif 'mid' in text:
         return 'mid'
     elif 'junior' in text:
         return 'junior'

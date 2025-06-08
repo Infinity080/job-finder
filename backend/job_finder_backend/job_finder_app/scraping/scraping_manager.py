@@ -1,38 +1,37 @@
 from job_finder_app.scraping.pracuj_class import Pracuj 
 from job_finder_app.scraping.justjoinit_class import JustJoinIt 
+from job_finder_app.scraping.nofluffjobs_class import NoFluffJobs 
 from job_finder_app.models import Specialization, Website
 
 class ScrapingManager():
     def __init__(self) -> None:
         self.pracuj = Pracuj()
         self.justJoinIt = JustJoinIt()
+        self.nofluffjobs = NoFluffJobs()
 
-        self.websites = [self.pracuj, self.justJoinIt]
+        self.websites = [self.pracuj, self.justJoinIt, self.nofluffjobs]
 
         self.domain_to_scraper = {
             "pracuj.pl": self.pracuj,
-            "justjoin.it": self.justJoinIt
+            "justjoin.it": self.justJoinIt,
+            "nofluffjobs.com" : self.nofluffjobs
         }
 
     def get_all_specializations(self):
         specs = {}
         for website in self.websites:
-            db_website = Website.objects.get(name=website.name)
+            db_website, _ = Website.objects.get_or_create(name=website.name)
             website_specs = Specialization.objects.filter(website=db_website)
-            specs[website.name] = [s.name for s in website_specs]
-        if specs:
-            return specs
-        else:
-            for website in self.websites:
-                scraped_specs = website.get_specializations()
-                db_website, _ = Website.objects.get_or_create(name=website.name)
 
+            if website_specs.exists():
+                specs[website.name] = [s.name for s in website_specs]
+            else:
+                scraped_specs = website.get_specializations()
                 for spec_name in scraped_specs:
                     Specialization.objects.get_or_create(name=spec_name, website=db_website)
-
                 specs[website.name] = scraped_specs
+        return specs
 
-            return specs
 
 
     def get_jobs_by_specialization(self, specializations, exp_level):
