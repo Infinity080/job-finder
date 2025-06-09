@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import { Spinner, Alert, Card, Accordion, Button } from 'react-bootstrap'
 
 export default function FindJobs() {
   const [specs, setSpecs] = useState([])
@@ -9,7 +10,7 @@ export default function FindJobs() {
   const [jobLinks, setJobLinks] = useState({})
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState(null)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState({ text: '', variant: '' })
   const [cvLoading, setCvLoading] = useState(false)
 
   useEffect(() => {
@@ -22,19 +23,11 @@ export default function FindJobs() {
     })
   }, [])
 
-  const handleSiteClick = site =>
-    setSelected(prev => ({
-      ...prev,
-      [site]: { ...(prev[site] || {}), _open: !prev[site]?._open }
-    }))
-
   const handleSpecClick = (site, name) =>
     setSelected(prev => ({
       ...prev,
       [site]: { ...prev[site], [name]: !prev[site]?.[name] }
     }))
-
-  const updateExperience = level => setExperience(level)
 
   const fetchJobs = async () => {
     const chosen = Object.entries(selected).flatMap(([site, values]) =>
@@ -42,8 +35,14 @@ export default function FindJobs() {
         .filter(key => key !== '_open' && values[key])
         .map(name => ({ site, name }))
     )
-    if (!experience || !chosen.length) {
-      alert('Choose experience level and at least one specialization.')
+    
+    if (!experience) {
+      setMessage({ text: 'Please select an experience level', variant: 'danger' })
+      return
+    }
+    
+    if (!chosen.length) {
+      setMessage({ text: 'Please select at least one specialization', variant: 'danger' })
       return
     }
 
@@ -62,7 +61,7 @@ export default function FindJobs() {
       }
       setJobLinks(grouped)
     } catch {
-      alert('Error fetching jobs.')
+      setMessage({ text: 'Error fetching jobs', variant: 'danger' })
     } finally {
       setLoading(false)
     }
@@ -73,7 +72,7 @@ export default function FindJobs() {
   const uploadCv = async e => {
     e.preventDefault()
     if (!file) {
-      return setMessage('No file selected.')
+      return setMessage({ text: 'No file selected', variant: 'danger' })
     }
     setCvLoading(true)
 
@@ -96,97 +95,148 @@ export default function FindJobs() {
       })
       setSelected(updated)
       setExperience(data.predicted_experience_level.toLowerCase())
-      setMessage('Upload successful.')
-    } 
-    catch {
-      setMessage('Failed to process CV.')
-    } 
-    finally {
+    } catch {
+      setMessage({ text: 'Failed to process CV', variant: 'danger' })
+    } finally {
       setCvLoading(false)
     }
   }
 
   return (
-    <div className="container my-5">
-      <h1 className="text-center mb-4">Find Jobs</h1>
+    <div className="container my-5" style={{ maxWidth: '900px' }}>
+      <Card className="shadow-sm mb-4">
+        <Card.Body className="text-center">
+          <h1 className="mb-3" style={{ color: '#2c3e50' }}>Find Your Dream Job</h1>
+          <p className="text-muted">
+            Upload your CV or manually select your skills to get personalized job recommendations
+          </p>
+        </Card.Body>
+      </Card>
 
-      <form onSubmit={uploadCv} className="text-center mb-4">
-        <input type="file" accept="application/pdf" onChange={handleFile} />
-        <button className="btn btn-primary mx-2">Upload CV</button>
-      </form>
+      {message.text && (
+        <Alert variant={message.variant} className="mb-4" dismissible onClose={() => setMessage({ text: '', variant: '' })}>
+          {message.text}
+        </Alert>
+      )}
 
-      {message && <p className="text-center">{message}</p>}
-      {cvLoading && <p className="text-center">Analyzing CV...</p>}
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
+          <h4 className="mb-3">Upload Your CV (Optional)</h4>
+          <form onSubmit={uploadCv} className="d-flex align-items-center">
+            <div className="flex-grow-1 me-3">
+              <input 
+                type="file" 
+                accept="application/pdf" 
+                onChange={handleFile} 
+                className="form-control"
+                id="cvUpload"
+              />
+            </div>
+            <Button type="submit" variant="primary" disabled={cvLoading}>
+              {cvLoading ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                  <span className="ms-2">Analyzing</span>
+                </>
+              ) : 'Upload CV'}
+            </Button>
+          </form>
+          <small className="text-muted">We will automatically detect your skills and experience level</small>
+        </Card.Body>
+      </Card>
 
-      <div className="mb-4 text-center">
-        <h3>Experience Level</h3>
-        <div className="btn-group">
-          {['junior', 'mid', 'senior'].map(level => (
-            <button
-              key={level}
-              type="button"
-              className={`btn ${experience === level ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => updateExperience(level)}
-            >
-              {level.charAt(0).toUpperCase() + level.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <h3>Specializations</h3>
-        <ul className="list-unstyled">
-          {[...new Set(specs.map(s => s.site))].map(site => (
-            <li key={site} className="mb-3 text-start">
-              <span
-                onClick={() => handleSiteClick(site)}
-                style={{ cursor: 'pointer', fontWeight: 'bold', color: '#007bff' }}
+      <Card className="shadow-sm mb-4">
+        <Card.Body className="text-center">
+          <h4 className="mb-3">Experience Level</h4>
+          <div className="d-flex flex-wrap gap-2 justify-content-center">
+            {['junior', 'mid', 'senior'].map(level => (
+              <Button
+                key={level}
+                variant={experience === level ? 'primary' : 'outline-primary'}
+                onClick={() => setExperience(level)}
+                className="text-capitalize"
               >
-                {selected[site]?._open ? '▼' : '►'} {site}
-              </span>
-              {selected[site]?._open && (
-                <div className="mt-2 p-3 border rounded bg-light">
-                  <div className="row">
+                {level}
+              </Button>
+            ))}
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Card className="shadow-sm mb-4">
+        <Card.Body>
+          <h4 className="mb-3">Specializations</h4>
+          
+          <Accordion>
+            {[...new Set(specs.map(s => s.site))].map(site => (
+              <Accordion.Item eventKey={site} key={site}>
+                <Accordion.Header>
+                  <span className="fw-bold">{site}</span>
+                </Accordion.Header>
+                <Accordion.Body>
+                  <div className="d-flex flex-wrap gap-2">
                     {specs
                       .filter(s => s.site === site)
                       .map((s, i) => (
-                        <div key={i} className="col-6 col-md-4 mb-2">
-                          <button
-                            onClick={() => handleSpecClick(site, s.name)}
-                            className={`btn ${selected[site]?.[s.name] ? 'btn-success' : 'btn-outline-success'} w-100`}
-                          >
-                            {s.name}
-                          </button>
-                        </div>
+                        <Button
+                          key={i}
+                          variant={selected[site]?.[s.name] ? 'primary' : 'outline-primary'}
+                          onClick={() => handleSpecClick(site, s.name)}
+                          className="text-nowrap"
+                        >
+                          {s.name}
+                        </Button>
                       ))}
                   </div>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+                </Accordion.Body>
+              </Accordion.Item>
+            ))}
+          </Accordion>
+        </Card.Body>
+      </Card>
+
+      <div className="d-grid mb-5">
+        <Button 
+          variant="primary" 
+          size="lg" 
+          onClick={fetchJobs} 
+          disabled={loading}
+          className="py-3"
+        >
+          {loading ? (
+            <>
+              <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+              <span className="ms-2">Searching Jobs</span>
+            </>
+          ) : (
+            'Find Matching Jobs'
+          )}
+        </Button>
       </div>
 
-      <button className="btn btn-success w-100" onClick={fetchJobs} disabled={loading}>
-        {loading ? 'Loading...' : 'Find Job Links'}
-      </button>
-
       {Object.keys(jobLinks).length > 0 && (
-        <div className="mt-4">
-          {Object.entries(jobLinks).map(([spec, urls]) => (
-            <div key={spec} className="mb-4">
-              <h4 className="text-center">{spec}</h4>
-              <div className="d-flex flex-wrap justify-content-center">
-                {urls.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="btn btn-link m-2">
-                    {url}
-                  </a>
-                ))}
+        <Card className="shadow-sm">
+          <Card.Body>
+            <h3 className="mb-4">Matching Jobs</h3>
+            {Object.entries(jobLinks).map(([spec, urls]) => (
+              <div key={spec} className="mb-4">
+                <h5 className="mb-3">{spec}</h5>
+                <ul className="list-group">
+                  {urls.map((url, i) => (
+                    <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="text-truncate me-3">
+                        {new URL(url).hostname.replace('www.', '')} - {spec}
+                      </a>
+                      <Button variant="outline-primary" size="sm" href={url} target="_blank">
+                        View
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </Card.Body>
+        </Card>
       )}
     </div>
   )
