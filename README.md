@@ -23,7 +23,10 @@ This app was created purely for educational purposes while respecting scraped we
 
 <img src="assets/job-finder.gif" width=80%/>
 
-## Cloning
+## Running Locally
+Due to the scraping limitations (without a scraping VPN) and resources necessary to host a selenium grid, this app is not currently deployed, but feel free to use it locally.
+
+### Cloning
 
 ```bash
 git clone https://github.com/Infinity080/job-finder.git
